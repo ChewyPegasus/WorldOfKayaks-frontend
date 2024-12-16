@@ -29,10 +29,17 @@ export const routeService = {
     }
   },
 
-  createRoute: async (routeData) => {
+  createRoute: async (routeData, file) => {
     try {
-      console.log('Creating route:', routeData);
-      const response = await api.post('/routes', routeData);
+      const formData = new FormData();
+      formData.append('route', JSON.stringify(routeData));
+      formData.append('file', file);
+
+      const response = await api.post('/routes', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
       console.log('Route created:', response);
       return response?.data || null;
     } catch (error) {
