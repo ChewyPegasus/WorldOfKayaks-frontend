@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Container, Grid, Typography, TextField, Box, MenuItem, Pagination, CircularProgress, Alert } from '@mui/material';
 import RouteCard from './RouteCard';
 import { routeService } from '../../services/routeService';
@@ -20,11 +20,7 @@ const RouteList = () => {
   const difficulties = ['Easy', 'Medium', 'Hard', 'Expert'];
   const durations = ['1-2 hours', '2-4 hours', '4-6 hours', '6+ hours']
 
-  useEffect(() => {
-    fetchRoutes();
-  }, [filters]);
-
-  const fetchRoutes = async () => {
+  const fetchRoutes = useCallback(async () => {
     try {
       setLoading(true);
       const fetchedRoutes = await routeService.getAllRoutes(
@@ -48,7 +44,11 @@ const RouteList = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters]);
+
+  useEffect(() => {
+    fetchRoutes();
+  }, [fetchRoutes]);
 
   const handleFilterChange = (event) => {
     const { name, value } = event.target;
