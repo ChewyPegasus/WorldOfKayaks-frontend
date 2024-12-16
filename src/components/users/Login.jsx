@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { Container, Paper, TextField, Button, Typography, Box } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { userService } from '../../services/userService';
 
 const Login = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [formData, setFormData] = useState({
-    email: '',
+    login: '',
     password: ''
   });
   const [error, setError] = useState('');
@@ -20,12 +21,18 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+
     try {
       const response = await userService.login(formData);
-      localStorage.setItem('token', response.data.token);
-      navigate('/');
+      console.log('Login successful:', response);
+      navigate('/profile');
     } catch (error) {
-      setError('Invalid credentials');
+      console.error('Login error:', error);
+      const errorMessage = error.response?.data?.message || 
+                          error.message || 
+                          'Login failed. Please check your credentials.';
+      setError(errorMessage);
     }
   };
 
@@ -35,14 +42,23 @@ const Login = () => {
         <Typography variant="h4" gutterBottom>
           Login
         </Typography>
+        {location.state?.message && (
+          <Typography color="success.main" sx={{ mb: 2 }}>
+            {location.state.message}
+          </Typography>
+        )}
+        {error && (
+          <Typography color="error" sx={{ mb: 2 }}>
+            {error}
+          </Typography>
+        )}
         <form onSubmit={handleSubmit}>
           <TextField
             fullWidth
             margin="normal"
-            label="Email"
-            name="email"
-            type="email"
-            value={formData.email}
+            label="Username or Email"
+            name="login"
+            value={formData.login}
             onChange={handleChange}
             required
           />
@@ -56,20 +72,16 @@ const Login = () => {
             onChange={handleChange}
             required
           />
-          {error && (
-            <Typography color="error" sx={{ mt: 2 }}>
-              {error}
-            </Typography>
-          )}
-          <Button
-            type="submit"
-            variant="contained"
-            color="primary"
-            fullWidth
-            sx={{ mt: 3 }}
-          >
-            Login
-          </Button>
+          <Box sx={{ mt: 2 }}>
+            <Button
+              type="submit"
+              variant="contained"
+              color="primary"
+              fullWidth
+            >
+              Login
+            </Button>
+          </Box>
         </form>
       </Paper>
     </Container>

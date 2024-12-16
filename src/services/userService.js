@@ -1,6 +1,4 @@
-import axios from 'axios';
-
-const API_URL = process.env.REACT_APP_API_URL;
+import api from './api';
 
 const getAuthHeader = () => {
   const token = localStorage.getItem('token');
@@ -10,86 +8,112 @@ const getAuthHeader = () => {
 export const userService = {
   // Аутентификация
   login: async (credentials) => {
-    const response = await axios.post(`${API_URL}/auth/login`, credentials);
-    if (response.data.token) {
-      localStorage.setItem('token', response.data.token);
+    try {
+      console.log('Login attempt:', credentials);
+      const response = await api.post('/auth/authenticate', {
+        login: credentials.login, 
+        password: credentials.password
+      });
+      console.log('Login response:', response);
+      if (response.data.token) {
+        localStorage.setItem('token', response.data.token);
+      }
+      return response;
+    } catch (error) {
+      console.error('Login error:', error.response ? error.response.data : error);
+      throw error;
     }
-    return response;
   },
 
   register: async (userData) => {
-    return await axios.post(`${API_URL}/auth/register`, userData);
+    try {
+      console.log('Register attempt:', userData);
+      const response = await api.post('/auth/register', {
+        username: userData.username,
+        email: userData.email,
+        password: userData.password
+      });
+      console.log('Register response:', response);
+      if (response.data.token) {
+        localStorage.setItem('token', response.data.token);
+      }
+      return response;
+    } catch (error) {
+      console.error('Register error:', error.response ? error.response.data : error);
+      throw error;
+    }
   },
 
   logout: () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('user');
   },
 
   // Профиль пользователя
   getCurrentUser: async () => {
-    return await axios.get(`${API_URL}/users/profile`, {
+    return await api.get('/users/profile', {
       headers: getAuthHeader()
     });
   },
 
   updateProfile: async (userData) => {
-    return await axios.put(`${API_URL}/users/profile`, userData, {
+    return await api.put('/users/profile', userData, {
       headers: getAuthHeader()
     });
   },
 
   // Бронирования пользователя
   getUserBookings: async () => {
-    return await axios.get(`${API_URL}/users/bookings`, {
+    return await api.get('/users/bookings', {
       headers: getAuthHeader()
     });
   },
 
   createBooking: async (bookingData) => {
-    return await axios.post(`${API_URL}/bookings`, bookingData, {
+    return await api.post('/bookings', bookingData, {
       headers: getAuthHeader()
     });
   },
 
   cancelBooking: async (bookingId) => {
-    return await axios.delete(`${API_URL}/bookings/${bookingId}`, {
+    return await api.delete(`/bookings/${bookingId}`, {
       headers: getAuthHeader()
     });
   },
 
   // Избранное
   getFavorites: async () => {
-    return await axios.get(`${API_URL}/users/favorites`, {
+    return await api.get('/users/favorites', {
       headers: getAuthHeader()
     });
   },
 
   addToFavorites: async (routeId) => {
-    return await axios.post(`${API_URL}/users/favorites`, { routeId }, {
+    return await api.post(`/users/favorites/${routeId}`, {}, {
       headers: getAuthHeader()
     });
   },
 
   removeFromFavorites: async (routeId) => {
-    return await axios.delete(`${API_URL}/users/favorites/${routeId}`, {
+    return await api.delete(`/users/favorites/${routeId}`, {
       headers: getAuthHeader()
     });
   },
 
   // Изменение пароля
   changePassword: async (passwordData) => {
-    return await axios.put(`${API_URL}/users/password`, passwordData, {
+    return await api.post('/users/change-password', passwordData, {
       headers: getAuthHeader()
     });
   },
 
   // Восстановление пароля
   requestPasswordReset: async (email) => {
-    return await axios.post(`${API_URL}/auth/forgot-password`, { email });
+    return await api.post('/auth/reset-password-request', { email });
   },
 
   resetPassword: async (token, newPassword) => {
-    return await axios.post(`${API_URL}/auth/reset-password`, {
+    return await api.post('/auth/reset-password', {
       token,
       newPassword
     });
@@ -98,12 +122,14 @@ export const userService = {
   // Проверка аутентификации
   verifyToken: async () => {
     try {
-      await axios.get(`${API_URL}/auth/verify`, {
+      const response = await api.get('/auth/verify', {
         headers: getAuthHeader()
       });
-      return true;
+      return response.data;
     } catch (error) {
-      return false;
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      throw error;
     }
   }
 };

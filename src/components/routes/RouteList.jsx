@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Grid, Typography, TextField, Box, MenuItem, Pagination } from '@mui/material';
+import { Container, Grid, Typography, TextField, Box, MenuItem, Pagination, CircularProgress, Alert } from '@mui/material';
 import RouteCard from './RouteCard';
 import { routeService } from '../../services/routeService';
 
 const RouteList = () => {
   const [routes, setRoutes] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [filters, setFilters] = useState({
     difficulty: '',
     duration: '',
@@ -17,26 +18,33 @@ const RouteList = () => {
   });
 
   const difficulties = ['Easy', 'Medium', 'Hard', 'Expert'];
-  const durations = ['1-2 hours', '2-4 hours', '4-6 hours', '6+ hours'];
+  const durations = ['1-2 hours', '2-4 hours', '4-6 hours', '6+ hours']
 
   useEffect(() => {
     fetchRoutes();
-  }, [filters, pagination.page]);
+  }, [filters]);
 
   const fetchRoutes = async () => {
     try {
-      const response = await routeService.getRoutes({
-        ...filters,
-        page: pagination.page,
-        limit: 9
-      });
-      setRoutes(response.data.routes);
+      setLoading(true);
+      const fetchedRoutes = await routeService.getAllRoutes(
+        filters.difficulty ? parseInt(filters.difficulty) : null,
+        filters.duration ? parseInt(filters.duration) : null
+      );
+      
+      console.log('Fetched routes:', fetchedRoutes);
+      
+      // Ensure we have an array
+      setRoutes(Array.isArray(fetchedRoutes) ? fetchedRoutes : []);
+      setError(null);
       setPagination(prev => ({
         ...prev,
-        totalPages: Math.ceil(response.data.total / 9)
+        totalPages: Math.ceil((fetchedRoutes?.length || 0) / 9)
       }));
     } catch (error) {
       console.error('Error fetching routes:', error);
+      setError('Failed to load routes');
+      setRoutes([]);
     } finally {
       setLoading(false);
     }
@@ -55,7 +63,17 @@ const RouteList = () => {
     setPagination(prev => ({ ...prev, page: value }));
   };
 
-  if (loading) return <Typography>Loading...</Typography>;
+  if (loading) return (
+    <Container>
+      <CircularProgress />
+    </Container>
+  );
+
+  if (error) return (
+    <Container>
+      <Alert severity="error">{error}</Alert>
+    </Container>
+  );
 
   return (
     <Container>
@@ -83,8 +101,8 @@ const RouteList = () => {
               onChange={handleFilterChange}
             >
               <MenuItem value="">All</MenuItem>
-              {difficulties.map(diff => (
-                <MenuItem key={diff} value={diff.toLowerCase()}>
+              {difficulties.map((diff, index) => (
+                <MenuItem key={diff} value={index + 1}>
                   {diff}
                 </MenuItem>
               ))}
@@ -100,8 +118,8 @@ const RouteList = () => {
               onChange={handleFilterChange}
             >
               <MenuItem value="">All</MenuItem>
-              {durations.map(dur => (
-                <MenuItem key={dur} value={dur}>
+              {durations.map((dur, index) => (
+                <MenuItem key={dur} value={index + 1}>
                   {dur}
                 </MenuItem>
               ))}
@@ -110,28 +128,30 @@ const RouteList = () => {
         </Grid>
       </Box>
 
-      <Grid container spacing={3}>
-        {routes.length === 0 ? (
-          <Grid item xs={12}>
-            <Typography>No routes found</Typography>
-          </Grid>
-        ) : (
-          routes.map(route => (
+      {routes.length === 0 ? (
+        <Typography variant="h6" align="center">
+          No routes found
+        </Typography>
+      ) : (
+        <Grid container spacing={3}>
+          {routes.map(route => (
             <Grid item xs={12} sm={6} md={4} key={route.id}>
               <RouteCard route={route} />
             </Grid>
-          ))
-        )}
-      </Grid>
+          ))}
+        </Grid>
+      )}
 
-      <Box sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
-        <Pagination
-          count={pagination.totalPages}
-          page={pagination.page}
-          onChange={handlePageChange}
-          color="primary"
-        />
-      </Box>
+      {routes.length > 0 && (
+        <Box sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
+          <Pagination
+            count={pagination.totalPages}
+            page={pagination.page}
+            onChange={handlePageChange}
+            color="primary"
+          />
+        </Box>
+      )}
     </Container>
   );
 };

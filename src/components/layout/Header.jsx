@@ -1,5 +1,5 @@
 import React from 'react';
-import { AppBar, Toolbar, Typography, Button, Badge, IconButton } from '@mui/material';
+import { AppBar, Toolbar, Typography, Button, Badge } from '@mui/material';
 import { Link } from 'react-router-dom';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import { useNavigate } from 'react-router-dom';
@@ -23,9 +23,7 @@ const Header = () => {
         <Button color="inherit" component={Link} to="/routes">Routes</Button>
         <Button color="inherit" component={Link} to="/products">Products</Button>
         <Badge badgeContent={cartItemsCount} color="secondary" sx={{ mx: 2 }}>
-          <IconButton component={Link} to="/cart" color="inherit">
-            <ShoppingCartIcon />
-          </IconButton>
+          <ShoppingCartIcon component={Link} to="/cart" />
         </Badge>
         {isAuthenticated ? (
           <>

@@ -6,7 +6,7 @@ import { userService } from '../../services/userService';
 const Register = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    name: '',
+    username: '',
     email: '',
     password: '',
     confirmPassword: ''
@@ -22,16 +22,34 @@ const Register = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
       return;
     }
 
+    if (formData.password.length < 6) {
+      setError('Password must be at least 6 characters long');
+      return;
+    }
+
+    if (!formData.email.includes('@')) {
+      setError('Please enter a valid email address');
+      return;
+    }
+
     try {
-      await userService.register(formData);
-      navigate('/login');
+      const { username, email, password } = formData;
+      const response = await userService.register({ username, email, password });
+      console.log('Registration successful:', response);
+      navigate('/login', { state: { message: 'Registration successful! Please login.' } });
     } catch (error) {
-      setError(error.response?.data?.message || 'Registration failed');
+      console.error('Registration error:', error);
+      const errorMessage = error.response?.data?.message || 
+                          error.message || 
+                          'Registration failed. Please try again.';
+      setError(errorMessage);
     }
   };
 
@@ -41,13 +59,18 @@ const Register = () => {
         <Typography variant="h4" gutterBottom>
           Register
         </Typography>
+        {error && (
+          <Typography color="error" sx={{ mb: 2 }}>
+            {error}
+          </Typography>
+        )}
         <form onSubmit={handleSubmit}>
           <TextField
             fullWidth
             margin="normal"
-            label="Name"
-            name="name"
-            value={formData.name}
+            label="Username"
+            name="username"
+            value={formData.username}
             onChange={handleChange}
             required
           />
@@ -81,20 +104,16 @@ const Register = () => {
             onChange={handleChange}
             required
           />
-          {error && (
-            <Typography color="error" sx={{ mt: 2 }}>
-              {error}
-            </Typography>
-          )}
-          <Button
-            type="submit"
-            variant="contained"
-            color="primary"
-            fullWidth
-            sx={{ mt: 3 }}
-          >
-            Register
-          </Button>
+          <Box sx={{ mt: 2 }}>
+            <Button
+              type="submit"
+              variant="contained"
+              color="primary"
+              fullWidth
+            >
+              Register
+            </Button>
+          </Box>
         </form>
       </Paper>
     </Container>
